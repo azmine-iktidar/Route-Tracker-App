@@ -27,17 +27,16 @@ import RouteNameInput from "../components/Map/RouteNameInput";
 import StatusIndicator from "../components/Map/StatusIndicator";
 import TrackingControls from "../components/Map/TrackingControls";
 import { isOnline } from "../utils/netcheck";
-
-interface MapScreenProps {
-  route: {
-    params?: {
-      routeId?: string;
-    };
-  };
-  navigation: any;
+import { RouteProp } from "@react-navigation/native";
+interface RouteParams {
+  routeId: string;
 }
+type MapScreenRouteProp = {
+  route: RouteProp<Record<string, RouteParams>, string>;
+  navigation: any;
+};
 
-export default function MapScreen({ route, navigation }: MapScreenProps) {
+export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
   const [location, setLocation] = useState<LocationType | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);

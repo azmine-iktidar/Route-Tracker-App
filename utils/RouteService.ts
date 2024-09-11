@@ -1,19 +1,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../supabaseClient";
-import { RouteType } from "../types";
+import { RouteType, RoutePoint, Checkpoint } from "../types";
 import { isOnline } from "../utils/netcheck";
 
 const ROUTES_STORAGE_KEY = "offlineRoutes";
 
+const formatTimestamp = (timestamp: number): string => {
+  return new Date(timestamp).toISOString();
+};
+
 export const saveRoute = async (route: RouteType): Promise<string> => {
   try {
     const online = await isOnline();
-
-    if (online) {
-      return await saveRouteOnline(route);
-    } else {
-      return await saveRouteOffline(route);
-    }
+    return online
+      ? await saveRouteOnline(route)
+      : await saveRouteOffline(route);
   } catch (error) {
     console.error("Error saving route:", error);
     throw error;
@@ -21,14 +22,56 @@ export const saveRoute = async (route: RouteType): Promise<string> => {
 };
 
 export const saveRouteOnline = async (route: RouteType): Promise<string> => {
-  const { data, error } = await supabase.from("routes").insert(route).single();
+  const { data, error } = await supabase
+    .from("routes")
+    .insert({
+      name: route.name,
+      created_by: route.createdBy,
+    })
+    .select()
+    .single();
 
   if (error) throw error;
 
-  // Also save to AsyncStorage for offline access
-  await saveRouteToAsyncStorage(route);
+  const routeId = data.id;
 
-  return data.id;
+  if (route.points && route.points.length > 0) {
+    const { error: pointsError } = await supabase.from("route_points").insert(
+      route.points.map((point: RoutePoint) => ({
+        route_id: routeId,
+        latitude: point.location.latitude,
+        longitude: point.location.longitude,
+        accuracy: point.location.accuracy,
+        altitude: point.location.altitude,
+        speed: point.location.speed,
+        timestamp: formatTimestamp(point.timestamp),
+      }))
+    );
+
+    if (pointsError) throw pointsError;
+  }
+
+  if (route.checkpoints && route.checkpoints.length > 0) {
+    const { error: checkpointsError } = await supabase
+      .from("checkpoints")
+      .insert(
+        route.checkpoints.map((checkpoint: Checkpoint) => ({
+          route_id: routeId,
+          latitude: checkpoint.location.latitude,
+          longitude: checkpoint.location.longitude,
+          accuracy: checkpoint.location.accuracy,
+          altitude: checkpoint.location.altitude,
+          speed: checkpoint.location.speed,
+          timestamp: formatTimestamp(checkpoint.location.timestamp),
+        }))
+      );
+
+    if (checkpointsError) throw checkpointsError;
+  }
+
+  await saveRouteToAsyncStorage({ ...route, id: routeId });
+
+  return routeId;
 };
 
 export const saveRouteOffline = async (route: RouteType): Promise<string> => {
@@ -51,12 +94,7 @@ const saveRouteToAsyncStorage = async (route: RouteType) => {
 export const fetchRoutes = async (): Promise<RouteType[]> => {
   try {
     const online = await isOnline();
-
-    if (online) {
-      return await fetchRoutesOnline();
-    } else {
-      return await fetchRoutesOffline();
-    }
+    return online ? await fetchRoutesOnline() : await fetchRoutesOffline();
   } catch (error) {
     console.error("Error fetching routes:", error);
     throw error;
@@ -69,21 +107,47 @@ const fetchRoutesOnline = async (): Promise<RouteType[]> => {
     .select(
       `
       *,
-      user:users!routes_created_by_fkey (
-        id,
-        username,
-        email
-      )
+      route_points (id, latitude, longitude, accuracy, altitude, speed, timestamp),
+      checkpoints (id, latitude, longitude, accuracy, altitude, speed, timestamp)
     `
     )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  // Update AsyncStorage with the latest data
-  await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(data));
+  const routes: RouteType[] = data.map((route: any) => ({
+    id: route.id,
+    name: route.name,
+    createdBy: route.created_by,
+    points: route.route_points.map((point: any) => ({
+      id: point.id,
+      location: {
+        latitude: point.latitude,
+        longitude: point.longitude,
+        accuracy: point.accuracy,
+        altitude: point.altitude,
+        speed: point.speed,
+      },
+      timestamp: new Date(point.timestamp).getTime(),
+    })),
+    checkpoints: route.checkpoints.map((checkpoint: any) => ({
+      id: checkpoint.id,
+      location: {
+        latitude: checkpoint.latitude,
+        longitude: checkpoint.longitude,
+        accuracy: checkpoint.accuracy,
+        altitude: checkpoint.altitude,
+        speed: checkpoint.speed,
+        timestamp: new Date(checkpoint.timestamp).getTime(),
+      },
+    })),
+    createdAt: route.created_at,
+    updatedAt: route.updated_at,
+  }));
 
-  return data || [];
+  await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(routes));
+
+  return routes;
 };
 
 const fetchRoutesOffline = async (): Promise<RouteType[]> => {
@@ -107,7 +171,6 @@ export const syncOfflineRoutes = async () => {
     await saveRouteOnline(route);
   }
 
-  // Update AsyncStorage with the latest synced data
   await AsyncStorage.setItem(
     ROUTES_STORAGE_KEY,
     JSON.stringify(await fetchRoutesOnline())
@@ -117,90 +180,59 @@ export const syncOfflineRoutes = async () => {
 export const fetchRouteById = async (
   routeId: string
 ): Promise<RouteType | null> => {
-  console.log("Fetching route by ID:", routeId);
   try {
-    // First, fetch the main route data
-    const { data: routeData, error: routeError } = await supabase
+    const { data, error } = await supabase
       .from("routes")
-      .select("*")
+      .select(
+        `
+        *,
+        route_points (id, latitude, longitude, accuracy, altitude, speed, timestamp),
+        checkpoints (id, latitude, longitude, accuracy, altitude, speed, timestamp)
+      `
+      )
       .eq("id", routeId)
       .single();
 
-    if (routeError) {
-      console.error("Error fetching route:", routeError);
-      throw routeError;
-    }
+    if (error) throw error;
 
-    if (!routeData) {
-      console.log("No route found with ID:", routeId);
-      return null;
-    }
+    if (!data) return null;
 
-    // Now, fetch the route points
-    const { data: pointsData, error: pointsError } = await supabase
-      .from("route_points")
-      .select("*")
-      .eq("route_id", routeId);
-
-    if (pointsError) {
-      console.error("Error fetching route points:", pointsError);
-      // Don't throw, continue with empty points array
-    }
-
-    // Try to fetch checkpoints if the table exists
-    let checkpointsData = [];
-    try {
-      const { data: checkpoints, error: checkpointsError } = await supabase
-        .from("checkpoints")
-        .select("*")
-        .eq("route_id", routeId);
-
-      if (checkpointsError) {
-        console.error("Error fetching checkpoints:", checkpointsError);
-      } else {
-        checkpointsData = checkpoints || [];
-      }
-    } catch (error) {
-      console.error(
-        "Error fetching checkpoints, table might not exist:",
-        error
-      );
-    }
-
-    // Transform the data to match the RouteType
     const route: RouteType = {
-      id: routeData.id,
-      user_id: routeData.user_id,
-      name: routeData.name,
-      createdBy: routeData.created_by,
-      // @ts-ignore
-      points: (pointsData || []).map((point: any) => ({
+      id: data.id,
+      name: data.name,
+      createdBy: data.created_by,
+      points: data.route_points.map((point: any) => ({
         id: point.id,
         location: {
           latitude: point.latitude,
           longitude: point.longitude,
+          accuracy: point.accuracy,
+          altitude: point.altitude,
+          speed: point.speed,
         },
-        timestamp: point.timestamp,
+        timestamp: new Date(point.timestamp).getTime(),
       })),
-      checkpoints: checkpointsData.map((checkpoint: any) => ({
+      checkpoints: data.checkpoints.map((checkpoint: any) => ({
         id: checkpoint.id,
         location: {
           latitude: checkpoint.latitude,
           longitude: checkpoint.longitude,
+          accuracy: checkpoint.accuracy,
+          altitude: checkpoint.altitude,
+          speed: checkpoint.speed,
+          timestamp: new Date(checkpoint.timestamp).getTime(),
         },
       })),
-      createdAt: routeData.created_at,
-      updatedAt: routeData.updated_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
     };
 
-    // Update local storage
     await AsyncStorage.setItem(`route_${routeId}`, JSON.stringify(route));
 
     return route;
   } catch (error) {
     console.error("Error in fetchRouteById:", error);
 
-    // Try to fetch from local storage if online fetch fails
     try {
       const localRoute = await AsyncStorage.getItem(`route_${routeId}`);
       if (localRoute) {
