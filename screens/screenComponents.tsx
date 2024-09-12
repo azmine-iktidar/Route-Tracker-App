@@ -4,7 +4,7 @@ import { View, Text } from "react-native";
 import RegisterScreen from "./RegisterScreen";
 import MapScreen from "./MapScreen";
 import RouteListScreen from "./RouteListScreen";
-import GroupScreen from "./GroupScreen";
+
 import { LoginScreen } from "./LoginScreen";
 import AboutApp from "./AboutApp";
 
@@ -22,7 +22,7 @@ export const screenComponents = {
   Register: RegisterScreen,
   Map: MapScreen,
   RouteList: RouteListScreen,
-  Group: GroupScreen,
+
   AboutApp: AboutApp,
 };
 

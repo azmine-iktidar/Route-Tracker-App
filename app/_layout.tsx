@@ -3,26 +3,26 @@ import {
   NavigationContainer,
   ThemeProvider,
 } from "@react-navigation/native";
-
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { TextStyle } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
-import GroupStack from "@/screens/navigation/GroupStack";
 import { CustomDrawer } from "@/components/CustomDrawer";
 import { screenComponents } from "@/screens/screenComponents";
 import { useColorScheme } from "@/components/useColorScheme";
-const Drawer = createDrawerNavigator();
 
-// Prevent the splash screen from auto-hiding
+const Drawer = createDrawerNavigator();
 
 export default function App() {
   const colorScheme = useColorScheme();
   const { isLoggedIn, isLoading, login, logout, user } = useAuth();
 
-  const mainScreens: ("Map" | "RouteList" | "Group" | "AboutApp" | "Login")[] =
-    ["Map", "RouteList", "Group", "AboutApp"];
+  const mainScreens: ("Map" | "RouteList" | "AboutApp" | "Login")[] = [
+    "Map",
+    "RouteList",
+    "AboutApp",
+  ];
 
   const drawerScreenOptions = {
     headerStyle: {
@@ -31,7 +31,6 @@ export default function App() {
     headerTintColor: "#fff",
     headerTitleStyle: {
       fontWeight: "bold",
-
       fontStyle: "normal",
     } as TextStyle,
     drawerStyle: {
@@ -40,6 +39,12 @@ export default function App() {
     },
     swipeEnabled: isLoggedIn,
     drawerLabelStyle: {},
+  };
+
+  const renderMainScreen = (name: string) => (props: any) => {
+    const ScreenComponent =
+      screenComponents[name as keyof typeof screenComponents];
+    return <ScreenComponent {...props} />;
   };
 
   return (
@@ -75,31 +80,14 @@ export default function App() {
                     swipeEnabled: true,
                     swipeEdgeWidth: 50,
                     swipeMinDistance: 50,
-                    headerTitle:
-                      name === "AboutApp"
-                        ? "About App"
-                        : name === "RouteList"
-                        ? "Saved Routes"
-                        : name === "Group"
-                        ? "Groups (Not Ready 😔)"
-                        : name,
-                    title:
-                      name === "AboutApp"
-                        ? "About App"
-                        : name === "RouteList"
-                        ? "Saved Routes"
-                        : name === "Group"
-                        ? "Groups (Not Ready 😔)"
-                        : name,
+                    headerTitle: name === "AboutApp" ? "About App" : name,
+                    title: name === "AboutApp" ? "About App" : name,
                     drawerLabelStyle: {
                       fontWeight: "bold",
                     },
                   }}
                 >
                   {(props) => {
-                    if (name === "Group") {
-                      return <GroupStack {...props} />;
-                    }
                     const ScreenComponent =
                       screenComponents[name as keyof typeof screenComponents];
                     return <ScreenComponent {...props} />;
