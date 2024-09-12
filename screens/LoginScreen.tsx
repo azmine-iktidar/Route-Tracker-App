@@ -16,8 +16,8 @@ type LoginScreenProps = {
 };
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
-  navigation,
   login,
+  navigation,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

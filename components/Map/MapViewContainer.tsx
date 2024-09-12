@@ -1,6 +1,11 @@
 import React, { forwardRef, useImperativeHandle, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import MapView, { Marker, Polyline, Region } from "react-native-maps";
+import MapView, {
+  Marker,
+  PROVIDER_DEFAULT,
+  Polyline,
+  Region,
+} from "react-native-maps";
 import { LocationType, RoutePoint, RouteType, Checkpoint } from "../../types";
 import { customMapStyleArray } from "../../contexts";
 
@@ -117,7 +122,7 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
           key={mapKey}
           ref={mapRef}
           style={styles.map}
-          provider={"google"}
+          provider={PROVIDER_DEFAULT}
           showsUserLocation
           showsMyLocationButton={false}
           showsCompass={true}
