@@ -16,8 +16,22 @@ import { isOnline } from "../utils/netcheck";
 import { FlashList } from "@shopify/flash-list";
 import EditRouteModal from "@/components/EditRouteModal";
 import { useUserStore } from "../contexts/userStore";
-
-export default function RouteListScreen({ navigation }: { navigation: any }) {
+import { RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "react-native-screens/lib/typescript/native-stack/types";
+type RootStackParamList = {
+  RouteList: { refresh?: boolean };
+  Map: { routeId: string };
+};
+type RouteListScreenRouteProp = RouteProp<RootStackParamList, "RouteList">;
+type RouteListScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "RouteList"
+>;
+type Props = {
+  route: RouteListScreenRouteProp;
+  navigation: RouteListScreenNavigationProp;
+};
+const RouteList: React.FC<Props> = ({ route, navigation }) => {
   const [routes, setRoutes] = useState<RouteWithUser[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<RouteWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +40,14 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
   const [selectedRouteID, setSelectedRouteID] = useState<string>("");
   const [selectedRouteName, setSelectedRouteName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-
+  const { refresh } = route.params || {};
   const user = useUserStore((state) => state.user);
-
+  useEffect(() => {
+    if (refresh) {
+      setRefreshing(true);
+      fetchRoutes().finally(() => setRefreshing(false));
+    }
+  }, [refresh]);
   useEffect(() => {
     fetchRoutes();
   }, []);
@@ -237,7 +256,7 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   routeItem: {
@@ -352,3 +371,5 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+
+export default RouteList;

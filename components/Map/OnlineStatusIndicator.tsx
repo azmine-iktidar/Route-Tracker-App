@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Text, StyleSheet, Animated } from "react-native";
 
 interface StatusIndicatorProps {
@@ -6,22 +6,23 @@ interface StatusIndicatorProps {
 }
 
 const StatusIndicator: React.FC<StatusIndicatorProps> = ({ isOnline }) => {
-  const [fadeAnim] = React.useState(new Animated.Value(0));
+  const [fadeAnim] = useState(new Animated.Value(0)); // Fade animation
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Re-trigger the animation when `isOnline` changes
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [isOnline]);
+  }, [isOnline]); // Re-run effect when `isOnline` changes
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: isOnline ? "#4caf4f86" : "#f443367f" },
-        { opacity: fadeAnim },
+        { backgroundColor: isOnline ? "#4caf50" : "#f44336" },
+        { opacity: fadeAnim }, // Apply fade animation
       ]}
     >
       <Text style={styles.text}>{isOnline ? "Online" : "Offline"}</Text>
@@ -34,8 +35,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: "rgba(255, 0, 0, 0.7)",
-    padding: 5,
+    padding: 8,
     borderRadius: 5,
     alignItems: "center",
   },

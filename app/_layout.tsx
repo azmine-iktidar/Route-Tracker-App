@@ -135,6 +135,14 @@ export default function AppLayout() {
               }}
               component={screenComponents.Register}
             />
+            <Drawer.Screen
+              name="AboutApp"
+              options={{
+                headerTitle: "About App",
+                drawerLabel: "About App",
+              }}
+              component={screenComponents.AboutApp}
+            />
           </>
         ) : (
           <>

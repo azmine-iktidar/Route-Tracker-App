@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useCallback,
 } from "react";
+import NetInfo from "@react-native-community/netinfo";
 import {
   View,
   Alert,
@@ -30,7 +31,7 @@ import MapViewContainer, {
 } from "../components/Map/MapViewContainer";
 import LocationButton from "../components/Map/LocationButton";
 import RouteNameInput from "../components/Map/RouteNameInput";
-import StatusIndicator from "../components/Map/StatusIndicator";
+import StatusIndicator from "../components/Map/OnlineStatusIndicator";
 import TrackingControls from "../components/Map/TrackingControls";
 import { isOnline } from "../utils/netcheck";
 import { RouteProp } from "@react-navigation/native";
@@ -65,6 +66,43 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
     maxLng: number;
   } | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  useEffect(() => {
+    console.log("MapScreen mounted");
+
+    const initialCheckAndSetup = async () => {
+      try {
+        // Initial check using the existing isOnline function
+        const initialOnlineStatus = await isOnline();
+        setIsOnlineState(initialOnlineStatus);
+        if (initialOnlineStatus) {
+          syncOfflineRoutes();
+        }
+      } catch (error) {
+        console.error("Error during initial connection check:", error);
+      }
+
+      // Set up NetInfo listener for real-time updates
+      const unsubscribe = NetInfo.addEventListener((state) => {
+        const isConnected = state.isConnected ?? false;
+        setIsOnlineState(isConnected);
+        if (isConnected) {
+          syncOfflineRoutes();
+        }
+      });
+
+      // Setup location and fetch route
+      await setupLocationAndFetchRoute();
+
+      // Return cleanup function
+      return () => {
+        console.log("MapScreen unmounting");
+        stopLocationTracking();
+        unsubscribe();
+      };
+    };
+
+    initialCheckAndSetup();
+  }, []);
   const calculateRouteBounds = (points: RoutePoint[]) => {
     if (points.length === 0) return null;
 
@@ -128,17 +166,19 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
   }, [route.params?.routeId]);
   useEffect(() => {
     console.log("MapScreen mounted");
+
     const checkConnectionAndSync = async () => {
-      const online = await isOnline();
-      setIsOnlineState(online);
-      if (online) {
-        await syncOfflineRoutes();
+      try {
+        const online = await isOnline();
+        setIsOnlineState(online);
+        if (online) {
+          syncOfflineRoutes();
+        }
+      } catch (error) {
+        console.error("Error checking connection or syncing:", error);
       }
     };
-
-    checkConnectionAndSync();
-    setupLocationAndFetchRoute();
-
+    Promise.all([checkConnectionAndSync(), setupLocationAndFetchRoute()]);
     return () => {
       console.log("MapScreen unmounting");
       stopLocationTracking();
@@ -268,7 +308,7 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
     console.log("Attempting to save route");
     if (currentRoute.length === 0) {
       console.warn("No route to save");
-      Alert.alert("Error", "No route to save");
+      Alert.alert("Error", "No route to save. Please start tracking first.");
       setSaveLoadingState(false);
       return;
     }
@@ -304,7 +344,7 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
       const savedRouteId = await saveRoute(newRoute);
       console.log("Route saved successfully with ID:", savedRouteId);
       clearRoute();
-      navigation.navigate("RouteList");
+      navigation.navigate("RouteList", { refresh: true });
     } catch (error) {
       console.error("Error saving route:", error);
       Alert.alert("Error", "Failed to save route. Please try again.");

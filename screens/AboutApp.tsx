@@ -4,17 +4,18 @@ const AboutApp = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>About Tactical Navigator</Text>
+        <Text style={styles.title}>About</Text>
+        <Text style={styles.title}>Tactical Navigator</Text>
         <Image source={require("../assets/logo.png")} style={styles.logo} />
       </View>
 
       <Text style={styles.description}>
-        Tactical Navigator is designed to assist Bangladesh Army personnel in
-        executing missions with precision and efficiency using custom routes and
-        checkpoints. Developed in collaboration with 15 RE Bn, the app enables
-        soldiers to navigate through complex terrains with real-time location
-        tracking, strategic route planning, and tactical data sharing across the
-        app users.
+        Tactical Navigator is designed to assist BD Army in executing missions
+        with precision and efficiency using custom routes and checkpoints.
+        Developed in collaboration with 15 RE Bn, the app enables soldiers to
+        navigate through complex terrains with real-time location tracking,
+        strategic route planning, and tactical data sharing across the app
+        users.
       </Text>
 
       <Text style={styles.description}>
@@ -46,8 +47,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "900",
     color: "#2A2A2A",
   },
   subtitle: {
@@ -58,23 +59,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    width: 80,
+    height: 80,
+    marginBottom: 5,
+    marginTop: 5,
     objectFit: "contain",
   },
   description: {
     fontSize: 16,
     color: "#333",
-    textAlign: "center",
+    textAlign: "justify",
+    justifyContent: "center",
     marginBottom: 10,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   footer: {
     fontSize: 10,
     fontWeight: "bold",
     color: "#555",
     textAlign: "center",
-    marginTop: 30,
+    marginTop: 10,
   },
 });

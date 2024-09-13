@@ -56,6 +56,7 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
     const [currentAccuracy, setCurrentAccuracy] = useState<number | null>(null);
     const [isCompassVisible, setIsCompassVisible] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
+
     useImperativeHandle(ref, () => ({
       centerOnUserLocation: () => {
         if (mapRef.current && location) {
@@ -97,7 +98,7 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
         if (mapRef.current) {
           mapRef.current.animateCamera({
             center: { latitude: loc.latitude, longitude: loc.longitude },
-            zoom: 17, // You can adjust this zoom level as needed
+            zoom: 20,
           });
         }
       },

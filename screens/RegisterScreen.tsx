@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { supabase } from "../supabaseClient";
 import * as crypto from "expo-crypto";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface RegisterScreenProps {
   navigation: {
@@ -22,16 +23,28 @@ interface RegisterScreenProps {
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isPasswordMatch, setIsPasswordMatch] = useState<boolean>(false);
   const signUp = async (): Promise<void> => {
-    if (!email || !password || !username) {
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setIsPasswordMatch(false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setIsPasswordMatch(false);
+      return;
+    }
+    if (!email || !password || !username || !confirmPassword) {
       setError("Please fill in all fields.");
       return;
     }
-
     setLoading(true);
     setError(null);
     try {
@@ -110,15 +123,70 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           autoComplete="email"
           placeholderTextColor="#aaa"
         />
-        <TextInput
-          style={styles.input}
-          onChangeText={setPassword}
-          value={password}
-          secureTextEntry={true}
-          placeholder="Password"
-          autoComplete="password"
-          placeholderTextColor="#aaa"
-        />
+        <View
+          style={{
+            position: "relative",
+          }}
+        >
+          <TextInput
+            style={styles.input}
+            onChangeText={setPassword}
+            value={password}
+            secureTextEntry={showPassword ? false : true}
+            placeholder="Password"
+            placeholderTextColor="#aaa"
+          />
+          <TouchableOpacity
+            style={{ position: "absolute", right: "3%", top: "20%" }}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <MaterialCommunityIcons
+                name="eye-outline"
+                size={24}
+                color="#aaa"
+              />
+            ) : (
+              <MaterialCommunityIcons
+                name="eye-off-outline"
+                size={24}
+                color="#aaa"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+        <View
+          style={{
+            position: "relative",
+          }}
+        >
+          <TextInput
+            style={styles.input}
+            onChangeText={setConfirmPassword}
+            value={confirmPassword}
+            secureTextEntry={showConfirmPassword ? false : true}
+            placeholder="Confirm Password"
+            placeholderTextColor="#aaa"
+          />
+          <TouchableOpacity
+            style={{ position: "absolute", right: "3%", top: "20%" }}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? (
+              <MaterialCommunityIcons
+                name="eye-outline"
+                size={24}
+                color="#aaa"
+              />
+            ) : (
+              <MaterialCommunityIcons
+                name="eye-off-outline"
+                size={24}
+                color="#aaa"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
 
         {loading ? (
           <ActivityIndicator size="large" color="#007BFF" />
@@ -128,12 +196,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             onPress={signUp}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>Sign Up</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.buttonText}>Sign Up</Text>
+            )}
           </TouchableOpacity>
         )}
 
         <Text style={styles.signInText}>
-          Already have an account?{" "}
+          Already Registered?{" "}
           <Text
             style={styles.signInLink}
             onPress={() => navigation.navigate("Login")}

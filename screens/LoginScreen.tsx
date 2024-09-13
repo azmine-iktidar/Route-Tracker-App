@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   View,
@@ -23,7 +24,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Please enter both email and password");
@@ -58,15 +59,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           keyboardType="email-address"
           placeholderTextColor="#aaa"
         />
-        <TextInput
-          style={styles.input}
-          onChangeText={setPassword}
-          value={password}
-          secureTextEntry={true}
-          placeholder="Password"
-          placeholderTextColor="#aaa"
-        />
-
+        <View
+          style={{
+            position: "relative",
+          }}
+        >
+          <TextInput
+            style={styles.input}
+            onChangeText={setPassword}
+            value={password}
+            secureTextEntry={showPassword ? false : true}
+            placeholder="Password"
+            placeholderTextColor="#aaa"
+          />
+          <TouchableOpacity
+            style={{ position: "absolute", right: "3%", top: "20%" }}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <MaterialCommunityIcons
+                name="eye-outline"
+                size={24}
+                color="#aaa"
+              />
+            ) : (
+              <MaterialCommunityIcons
+                name="eye-off-outline"
+                size={24}
+                color="#aaa"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.button}
           onPress={handleLogin}
