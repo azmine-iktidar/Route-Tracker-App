@@ -28,6 +28,7 @@ export const useRoutes = () => {
 
       if (error) throw error;
 
+      // Ensure we're setting a new array of routes, not modifying the existing one
       setRoutes(data || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
@@ -50,22 +51,52 @@ export const useRoutes = () => {
     console.log("Refreshed routes");
   }, [fetchRoutes]);
 
-  const deleteRoute = useCallback(async (id: string) => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.from("routes").delete().eq("id", id);
+  const handleDeleteRoute = useCallback(
+    async (id: string) => {
+      setRoutes((prevRoutes) => prevRoutes.filter((route) => route.id !== id));
 
-      if (error) throw error;
+      try {
+        const { error } = await supabase.from("routes").delete().eq("id", id);
 
-      setRoutes((routes) => routes.filter((route) => route.id !== id));
-      Alert.alert("Success", "Route deleted successfully");
-    } catch (error) {
-      console.error("Error deleting route:", error);
-      Alert.alert("Error", "Failed to delete route. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        if (error) throw error;
+
+        Alert.alert("Success", "Route deleted successfully");
+      } catch (error) {
+        console.error("Error deleting route:", error);
+        Alert.alert("Error", "Failed to delete route. Please try again.");
+
+        await fetchRoutes();
+      }
+    },
+    [fetchRoutes]
+  );
+
+  const handleUpdateRouteName = useCallback(
+    async (id: string, newName: string) => {
+      try {
+        setLoading(true);
+        const { error } = await supabase
+          .from("routes")
+          .update({ name: newName })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        // Update the route name in the state
+        setRoutes((prevRoutes) =>
+          prevRoutes.map((route) =>
+            route.id === id ? { ...route, name: newName } : route
+          )
+        );
+      } catch (error) {
+        console.error("Error updating route name:", error);
+        Alert.alert("Error", "Failed to update route name. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     fetchRoutes();
@@ -77,6 +108,7 @@ export const useRoutes = () => {
     refreshing,
     fetchRoutes,
     handleRefresh,
-    deleteRoute,
+    handleDeleteRoute,
+    handleUpdateRouteName,
   };
 };

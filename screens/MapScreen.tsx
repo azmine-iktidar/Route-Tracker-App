@@ -34,7 +34,7 @@ import RouteNameInput from "../components/Map/RouteNameInput";
 import StatusIndicator from "../components/Map/OnlineStatusIndicator";
 import TrackingControls from "../components/Map/TrackingControls";
 import { isOnline } from "../utils/netcheck";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 interface RouteParams {
   routeId: string;
 }
@@ -66,6 +66,17 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
     maxLng: number;
   } | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.routeId) {
+        setIsLoading(true);
+        fetchSavedRouteById(route.params.routeId);
+      } else {
+        clearRoute();
+        mapRef.current?.centerOnUserLocation();
+      }
+    }, [route.params?.routeId])
+  );
   useEffect(() => {
     console.log("MapScreen mounted");
 
@@ -364,14 +375,9 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
   };
 
   const clearMap = () => {
-    if (mapRef.current) {
-      mapRef.current.clearMap();
-      mapRef.current.centerOnUserLocation();
-      setSavedRoute(null);
-      setIsViewingMode(false);
-      setCurrentRoute([]);
-      setCheckpoints([]);
-    }
+    clearRoute();
+    mapRef.current?.centerOnUserLocation();
+    navigation.setParams({ routeId: undefined });
   };
 
   const discardRoute = () => {
@@ -400,52 +406,61 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
     );
   }
   return (
-    <View style={styles.container}>
-      <MapViewContainer
-        ref={mapRef}
-        location={location}
-        currentRoute={currentRoute}
-        checkpoints={checkpoints}
-        savedRoute={savedRoute}
-        isViewingMode={isViewingMode}
-        isTrackingStopped={isTrackingStopped}
-        routeBounds={routeBounds}
-        onMapReady={handleMapReady}
-        getLocation={getLocation}
-      />
-      <StatusIndicator isOnline={isOnlineState} />
-      {!showNameInput && !isViewingMode && (
-        <TrackingControls
-          isTracking={isTracking}
-          startTracking={startTracking}
-          stopTracking={stopTracking}
-          addCheckpoint={addCheckpoint}
-        />
+    <>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={styles.loadingText}>Loading route...</Text>
+        </View>
+      ) : (
+        <View style={styles.container}>
+          <MapViewContainer
+            ref={mapRef}
+            location={location}
+            currentRoute={currentRoute}
+            checkpoints={checkpoints}
+            savedRoute={savedRoute}
+            isViewingMode={isViewingMode}
+            isTrackingStopped={isTrackingStopped}
+            routeBounds={routeBounds}
+            onMapReady={handleMapReady}
+            getLocation={getLocation}
+          />
+          <StatusIndicator isOnline={isOnlineState} />
+          {!showNameInput && !isViewingMode && (
+            <TrackingControls
+              isTracking={isTracking}
+              startTracking={startTracking}
+              stopTracking={stopTracking}
+              addCheckpoint={addCheckpoint}
+            />
+          )}
+          {showNameInput && (
+            <RouteNameInput
+              routeName={routeName}
+              setRouteName={setRouteName}
+              saveRoute={handleSaveRoute}
+              saveLoadingState={saveLoadingState}
+              discardRoute={discardRoute}
+            />
+          )}
+          {!showNameInput && (
+            <LocationButton
+              onPress={() => {
+                console.log("Centering on user location");
+                mapRef.current?.centerOnUserLocation();
+              }}
+            />
+          )}
+          {isViewingMode && (
+            <TouchableOpacity style={styles.clearButton} onPress={clearMap}>
+              <Text style={styles.clearButtonText}>Clear Map</Text>
+            </TouchableOpacity>
+          )}
+          {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+        </View>
       )}
-      {showNameInput && (
-        <RouteNameInput
-          routeName={routeName}
-          setRouteName={setRouteName}
-          saveRoute={handleSaveRoute}
-          saveLoadingState={saveLoadingState}
-          discardRoute={discardRoute}
-        />
-      )}
-      {!showNameInput && (
-        <LocationButton
-          onPress={() => {
-            console.log("Centering on user location");
-            mapRef.current?.centerOnUserLocation();
-          }}
-        />
-      )}
-      {isViewingMode && (
-        <TouchableOpacity style={styles.clearButton} onPress={clearMap}>
-          <Text style={styles.clearButtonText}>Clear Map</Text>
-        </TouchableOpacity>
-      )}
-      {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
-    </View>
+    </>
   );
 }
 

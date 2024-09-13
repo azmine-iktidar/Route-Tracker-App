@@ -49,7 +49,6 @@ const EditRouteModal: React.FC<EditRouteModalProps> = ({
       if (error) throw error;
 
       onUpdate(newRouteName);
-      Alert.alert("Success", "Route edited successfully");
       onClose(true);
     } catch (error) {
       console.error("Error editing route:", error);

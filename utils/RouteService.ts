@@ -62,7 +62,9 @@ export const saveRouteOnline = async (route: RouteType): Promise<string> => {
           accuracy: checkpoint.location.accuracy,
           altitude: checkpoint.location.altitude,
           speed: checkpoint.location.speed,
-          timestamp: formatTimestamp(checkpoint.location.timestamp),
+          timestamp: checkpoint.location.timestamp
+            ? formatTimestamp(checkpoint.location.timestamp)
+            : null,
         }))
       );
 
@@ -119,6 +121,7 @@ const fetchRoutesOnline = async (): Promise<RouteType[]> => {
     id: route.id,
     name: route.name,
     createdBy: route.created_by,
+    user_id: route.user_id,
     points: route.route_points.map((point: any) => ({
       id: point.id,
       location: {
@@ -198,6 +201,7 @@ export const fetchRouteById = async (
     if (!data) return null;
 
     const route: RouteType = {
+      user_id: data.user_id,
       id: data.id,
       name: data.name,
       createdBy: data.created_by,
