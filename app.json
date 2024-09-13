@@ -17,8 +17,33 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.azmineabrar.tacnav"
+      "package": "com.azmineabrar.tacnav",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCChx6imGboofhblhSt1smA9g8eXvCR0sc"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "77374c1a-074e-4a7f-b7e2-93402304d447"
+      }
+    }
   }
 }

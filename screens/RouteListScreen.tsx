@@ -15,6 +15,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { isOnline } from "../utils/netcheck";
 import { FlashList } from "@shopify/flash-list";
 import EditRouteModal from "@/components/EditRouteModal";
+import { useUserStore } from "../contexts/userStore";
 
 export default function RouteListScreen({ navigation }: { navigation: any }) {
   const [routes, setRoutes] = useState<RouteWithUser[]>([]);
@@ -25,6 +26,8 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
   const [selectedRouteID, setSelectedRouteID] = useState<string>("");
   const [selectedRouteName, setSelectedRouteName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const user = useUserStore((state) => state.user);
 
   useEffect(() => {
     fetchRoutes();
@@ -41,7 +44,11 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
         .from("routes")
         .select(
           `
-          *,
+          id,
+          name,
+          created_by,
+          created_at,
+          updated_at,
           user:users!routes_created_by_fkey (
             id,
             username,
@@ -52,8 +59,8 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
-      setRoutes(data || []);
+      //@ts-ignore
+      setRoutes((data as RouteWithUser[]) || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
       Alert.alert("Error", "Failed to fetch routes. Please try again.");
@@ -66,7 +73,10 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
     const filtered = routes.filter(
       (route) =>
         route.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        route.user.username.toLowerCase().includes(searchQuery.toLowerCase())
+        (route.user?.username
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ??
+          false)
     );
     setFilteredRoutes(filtered);
   };
@@ -142,8 +152,12 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
     >
       <View style={styles.routeInfo}>
         <Text style={styles.routeName}>{item.name}</Text>
-        <Text style={styles.routeDetail}>Created by: {item.user.username}</Text>
-        <Text style={styles.routeDetail}>Date: {item.created_at}</Text>
+        <Text style={styles.routeDetail}>
+          Created by: {item.user?.username ?? "Unknown"}
+        </Text>
+        <Text style={styles.routeDetail}>
+          Date: {new Date(item.created_at).toLocaleDateString()}
+        </Text>
       </View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -152,18 +166,26 @@ export default function RouteListScreen({ navigation }: { navigation: any }) {
         >
           <MaterialIcons name="visibility" size={26} color="#ffffff" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: "#e0ca00" }]}
-          onPress={() => openEditModal(item.id, item.name)}
-        >
-          <MaterialIcons name="edit" size={26} color="#ffffff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: "#dc2626" }]}
-          onPress={() => deleteRoute(item.id)}
-        >
-          <MaterialIcons name="delete" size={26} color="#ffffff" />
-        </TouchableOpacity>
+
+        {
+          //@ts-ignore
+          user && item.created_by === user.id && (
+            <>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: "#e0ca00" }]}
+                onPress={() => openEditModal(item.id, item.name)}
+              >
+                <MaterialIcons name="edit" size={26} color="#ffffff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: "#dc2626" }]}
+                onPress={() => deleteRoute(item.id)}
+              >
+                <MaterialIcons name="delete" size={26} color="#ffffff" />
+              </TouchableOpacity>
+            </>
+          )
+        }
       </View>
     </LinearGradient>
   );

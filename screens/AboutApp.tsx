@@ -10,17 +10,19 @@ const AboutApp = () => {
 
       <Text style={styles.description}>
         Tactical Navigator is designed to assist Bangladesh Army personnel in
-        executing missions with precision and efficiency. Developed in
-        collaboration with 15 RE Bn, the app empowers soldiers to navigate
-        through complex terrains with real-time location tracking, strategic
-        route planning, and tactical data sharing.
+        executing missions with precision and efficiency using custom routes and
+        checkpoints. Developed in collaboration with 15 RE Bn, the app enables
+        soldiers to navigate through complex terrains with real-time location
+        tracking, strategic route planning, and tactical data sharing across the
+        app users.
       </Text>
 
       <Text style={styles.description}>
-        This app offers secure communication, up-to-date map data, and offline
-        functionality to ensure mission readiness in any environment. Whether in
-        field operations or training exercises, Tactical Navigator enhances
-        situational awareness and decision-making on the ground.
+        This app offers secure communication, up-to-date map data to ensure
+        mission readiness in any environment, specially navigating in dark or
+        inclement weather. Whether in operations, training events or regular
+        movements, Tactical Navigator can help in situational awareness and
+        decision-making on the ground based on previously saved route.
       </Text>
 
       <Text style={styles.footer}>

@@ -1,13 +1,15 @@
-import React, { forwardRef, useImperativeHandle, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import MapView, {
-  Marker,
-  PROVIDER_DEFAULT,
-  Polyline,
-  Region,
-} from "react-native-maps";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import MapView, { Marker, Polyline, Region } from "react-native-maps";
 import { LocationType, RoutePoint, RouteType, Checkpoint } from "../../types";
 import { customMapStyleArray } from "../../contexts";
+import AccuracyIndicator from "./AccuracyIndicator";
 
 interface MapViewContainerProps {
   location: LocationType | null;
@@ -23,6 +25,7 @@ interface MapViewContainerProps {
     maxLng: number;
   } | null;
   onMapReady: () => void;
+  getLocation: () => Promise<LocationType | null>;
 }
 export interface MapViewHandle {
   centerOnUserLocation: () => void;
@@ -43,12 +46,16 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
       isTrackingStopped,
       routeBounds,
       onMapReady,
+      getLocation,
     },
     ref
   ) => {
-    const mapRef = React.useRef<MapView | null>(null);
+    const mapRef = useRef<MapView | null>(null);
     const [mapKey, setMapKey] = useState(0);
-
+    const animatedValue = useRef(new Animated.Value(0)).current;
+    const [currentAccuracy, setCurrentAccuracy] = useState<number | null>(null);
+    const [isCompassVisible, setIsCompassVisible] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
     useImperativeHandle(ref, () => ({
       centerOnUserLocation: () => {
         if (mapRef.current && location) {
@@ -95,7 +102,6 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
         }
       },
     }));
-
     const routeToDisplay =
       isViewingMode && savedRoute ? savedRoute.points : currentRoute;
     const checkpointsToDisplay =
@@ -103,7 +109,7 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
         ? savedRoute.checkpoints
         : checkpoints;
 
-    React.useEffect(() => {
+    useEffect(() => {
       if (routeBounds) {
         const { minLat, maxLat, minLng, maxLng } = routeBounds;
         const region: Region = {
@@ -115,14 +121,68 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
         mapRef.current?.animateToRegion(region, 1000);
       }
     }, [routeBounds]);
+    const checkCompassVisibility = async () => {
+      if (!mapRef.current) return;
+      const camera = await mapRef.current.getCamera();
 
+      if (camera.heading > 0) {
+        console.log("Compass is shown");
+      }
+    };
+    const animateView = (toValue: number) => {
+      Animated.timing(animatedValue, {
+        toValue,
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const onRegionChangeComplete = async () => {
+      if (!mapRef.current) return;
+      const camera = await mapRef.current.getCamera();
+
+      if (camera.heading > 0 && !isCompassVisible) {
+        console.log("Compass is shown");
+        setIsCompassVisible(true);
+        animateView(1);
+      } else if (camera.heading === 0 && isCompassVisible) {
+        console.log("Compass is hidden");
+        setIsCompassVisible(false);
+        animateView(0);
+      }
+    };
+
+    const translateX = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 40], // Move 40 units to the right when shown
+    });
+    useEffect(() => {
+      let intervalId: NodeJS.Timeout;
+
+      const updateAccuracy = async () => {
+        const newLocation = await getLocation();
+        if (newLocation && newLocation.accuracy) {
+          setCurrentAccuracy(newLocation.accuracy);
+        }
+      };
+
+      intervalId = setInterval(updateAccuracy, 2000);
+
+      updateAccuracy();
+
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
+    }, [getLocation]);
     return (
       <View style={styles.container}>
         <MapView
           key={mapKey}
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_DEFAULT}
           showsUserLocation
           showsMyLocationButton={false}
           showsCompass={true}
@@ -131,6 +191,7 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
           customMapStyle={customMapStyleArray}
           userInterfaceStyle="dark"
           onMapReady={onMapReady}
+          onRegionChangeComplete={onRegionChangeComplete}
           initialRegion={
             location
               ? {
@@ -205,13 +266,18 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
             </>
           )}
         </MapView>
-        {location && location.accuracy && (
-          <View style={styles.accuracyContainer}>
-            <Text style={styles.accuracyText}>
-              Accuracy: {Math.round(location.accuracy)} meters
-            </Text>
-          </View>
-        )}
+        <Animated.View
+          style={[
+            styles.animatedView,
+            {
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+          {location && location.accuracy && (
+            <AccuracyIndicator accuracy={location.accuracy} />
+          )}
+        </Animated.View>
       </View>
     );
   }
@@ -248,6 +314,15 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     textAlign: "center",
+  },
+  animatedView: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+  },
+  rotationText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 

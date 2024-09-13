@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import {
   View,
   Alert,
@@ -151,7 +157,25 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
     console.log("Location permission granted, updating location");
     await updateLocation();
   };
-
+  const getLocation = useCallback(async (): Promise<LocationType | null> => {
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      const newLocation: LocationType = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        accuracy: location.coords.accuracy ?? undefined,
+        altitude: location.coords.altitude ?? undefined,
+        speed: location.coords.speed ?? undefined,
+        timestamp: location.timestamp,
+      };
+      setLocation(newLocation);
+      return newLocation;
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      setErrorMsg("Failed to get current location");
+      return null;
+    }
+  }, []);
   const updateLocation = async () => {
     try {
       let location = await Location.getCurrentPositionAsync({});
@@ -347,6 +371,7 @@ export default function MapScreen({ route, navigation }: MapScreenRouteProp) {
         isTrackingStopped={isTrackingStopped}
         routeBounds={routeBounds}
         onMapReady={handleMapReady}
+        getLocation={getLocation}
       />
       <StatusIndicator isOnline={isOnlineState} />
       {!showNameInput && !isViewingMode && (

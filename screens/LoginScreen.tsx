@@ -29,7 +29,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       setError("Please enter both email and password");
       return;
     }
-
     setError(null);
     setIsLoading(true);
     const success = await login(email, password);

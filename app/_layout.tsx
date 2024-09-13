@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import {
   DarkTheme,
   DefaultTheme,
@@ -7,13 +8,14 @@ import {
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { TextStyle } from "react-native";
+import { TextStyle, View, ActivityIndicator } from "react-native";
 import * as Linking from "expo-linking";
+import * as Location from "expo-location";
 import { useColorScheme } from "../components/useColorScheme.web";
 import { useAuth } from "../hooks/useAuth";
-import { CustomDrawer } from "@/components/CustomDrawer";
+import { CustomDrawer } from "../components/CustomDrawer";
+import { screenComponents } from "../screens/screenComponents";
 import { LoginScreen } from "@/screens/LoginScreen";
-import { screenComponents } from "@/screens/screenComponents";
 
 const Drawer = createDrawerNavigator();
 
@@ -34,11 +36,38 @@ const linking = {
 
 export default function AppLayout() {
   const colorScheme = useColorScheme();
-  const { isLoggedIn, isLoading, login, logout, user } = useAuth();
-
-  const mainScreens: MainScreenName[] = ["Map", "RouteList", "AboutApp"];
+  const {
+    isLoggedIn,
+    isLoading: isAuthLoading,
+    login,
+    logout,
+    user,
+  } = useAuth();
+  const [isLocationPermissionGranted, setIsLocationPermissionGranted] =
+    useState(false);
+  const [isInitialChecksDone, setIsInitialChecksDone] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   const theme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+
+  const performInitialChecks = useCallback(async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      setIsLocationPermissionGranted(status === "granted");
+
+      // Simulate map loading (replace with actual map loading logic if needed)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setIsMapReady(true);
+    } catch (error) {
+      console.error("Error during initial checks:", error);
+    } finally {
+      setIsInitialChecksDone(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    performInitialChecks();
+  }, [performInitialChecks]);
 
   const drawerScreenOptions = {
     headerStyle: {
@@ -57,80 +86,102 @@ export default function AppLayout() {
     drawerLabelStyle: {},
   };
 
-  if (isLoading) {
-    // You might want to show a loading screen here
-    return null;
-  }
+  const renderNavigator = () => {
+    if (isAuthLoading || !isInitialChecksDone || !isMapReady) {
+      return (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      );
+    }
+
+    return (
+      <Drawer.Navigator
+        screenOptions={drawerScreenOptions}
+        drawerContent={(props) => (
+          <CustomDrawer
+            {...props}
+            user={user}
+            logout={async () => {
+              const success = await logout();
+              if (success) {
+                props.navigation.reset({
+                  index: 0,
+                  routes: [{ name: "Login" }],
+                });
+              }
+            }}
+          />
+        )}
+      >
+        {!isLoggedIn ? (
+          <>
+            <Drawer.Screen
+              name="Login"
+              options={{
+                headerTitle: "Login",
+                title: "Login",
+                swipeEnabled: false,
+              }}
+            >
+              {(props) => <LoginScreen {...props} login={login} />}
+            </Drawer.Screen>
+            <Drawer.Screen
+              name="Register"
+              options={{
+                headerTitle: "Register",
+              }}
+              component={screenComponents.Register}
+            />
+          </>
+        ) : (
+          <>
+            {(["Map", "RouteList", "AboutApp"] as const).map((name) => (
+              <Drawer.Screen
+                key={name}
+                name={name}
+                options={{
+                  swipeEnabled: true,
+                  swipeEdgeWidth: 50,
+                  swipeMinDistance: 50,
+                  headerTitle:
+                    name === "AboutApp"
+                      ? "About App"
+                      : name === "RouteList"
+                      ? "Routes"
+                      : "Map",
+                  title:
+                    name === "AboutApp"
+                      ? "About App"
+                      : name === "RouteList"
+                      ? "Routes"
+                      : "Map",
+                  drawerLabelStyle: {
+                    fontWeight: "bold",
+                  },
+                }}
+              >
+                {(props) => {
+                  const ScreenComponent = screenComponents[name];
+                  // @ts-ignore
+                  return <ScreenComponent {...props} />;
+                }}
+              </Drawer.Screen>
+            ))}
+          </>
+        )}
+      </Drawer.Navigator>
+    );
+  };
 
   return (
-    <ThemeProvider value={theme}>
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+    <ThemeProvider value={DarkTheme}>
+      <StatusBar style={"dark"} />
       <SafeAreaProvider>
         <NavigationContainer theme={theme} linking={linking} independent={true}>
-          <Drawer.Navigator
-            screenOptions={drawerScreenOptions}
-            drawerContent={(props) => (
-              <CustomDrawer
-                {...props}
-                user={user}
-                logout={async () => {
-                  const success = await logout();
-                  if (success) {
-                    props.navigation.reset({
-                      index: 0,
-                      routes: [{ name: "Login" }],
-                    });
-                  }
-                }}
-              />
-            )}
-          >
-            {!isLoggedIn ? (
-              <>
-                <Drawer.Screen
-                  name="Login"
-                  options={{
-                    headerTitle: "Login",
-                    title: "Login",
-                    swipeEnabled: false,
-                  }}
-                >
-                  {(props) => <LoginScreen {...props} login={login} />}
-                </Drawer.Screen>
-                <Drawer.Screen
-                  name="Register"
-                  options={{
-                    headerTitle: "Register",
-                  }}
-                  component={screenComponents.Register}
-                />
-              </>
-            ) : (
-              <>
-                {mainScreens.map((name) => (
-                  <Drawer.Screen
-                    key={name}
-                    name={name}
-                    options={{
-                      swipeEnabled: true,
-                      swipeEdgeWidth: 50,
-                      swipeMinDistance: 50,
-                      headerTitle: name === "AboutApp" ? "About App" : name,
-                      title: name === "AboutApp" ? "About App" : name,
-                      drawerLabelStyle: {
-                        fontWeight: "bold",
-                      },
-                    }}
-                  >
-                    {(props) => {
-                      const ScreenComponent = screenComponents[name];
-                      return <ScreenComponent {...props} />;
-                    }}
-                  </Drawer.Screen>
-                ))}
-              </>
-            )}
-          </Drawer.Navigator>
+          {renderNavigator()}
         </NavigationContainer>
       </SafeAreaProvider>
     </ThemeProvider>
