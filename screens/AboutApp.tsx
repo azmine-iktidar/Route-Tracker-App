@@ -1,29 +1,55 @@
-import { StyleSheet, Text, View, Image, ScrollView } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, View, Image, ScrollView, Alert } from "react-native";
 
 const AboutApp = () => {
+  const [version, setVersion] = useState("1.0.0");
+
+  // Simulate update check on page load
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      // Simulated update check (replace with real API call)
+      const hasUpdate = false; // Simulate an available update
+
+      if (hasUpdate) {
+        Alert.alert(
+          "Update Available",
+          "A new version is available. Would you like to download it now?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Download",
+              onPress: () => {
+                // Replace with the actual download link
+                console.log("Download initiated...");
+              },
+            },
+          ]
+        );
+      }
+    };
+
+    checkForUpdates();
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>About</Text>
-        <Text style={styles.title}>Tactical Navigator</Text>
+        <Text style={styles.subtitle}>Tactical Navigator v1.0.0</Text>
         <Image source={require("../assets/logo.png")} style={styles.logo} />
       </View>
 
       <Text style={styles.description}>
-        Tactical Navigator is designed to assist BD Army in executing missions
-        with precision and efficiency using custom routes and checkpoints.
-        Developed in collaboration with 15 RE Bn, the app enables soldiers to
-        navigate through complex terrains with real-time location tracking,
-        strategic route planning, and tactical data sharing across the app
-        users.
+        Tactical Navigator assists BD Army in executing missions with custom
+        routes, real-time tracking, and secure data sharing.
       </Text>
 
       <Text style={styles.description}>
-        This app offers secure communication, up-to-date map data to ensure
-        mission readiness in any environment, specially navigating in dark or
-        inclement weather. Whether in operations, training events or regular
-        movements, Tactical Navigator can help in situational awareness and
-        decision-making on the ground based on previously saved route.
+        Navigate complex terrains, ensure mission readiness, and make informed
+        decisions with pre-saved routes and up-to-date map data.
       </Text>
 
       <Text style={styles.footer}>
@@ -41,43 +67,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    backgroundColor: "#f8f9fa",
   },
   header: {
     alignItems: "center",
     marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#2A2A2A",
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1f2937",
   },
   subtitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 20,
+    fontSize: 18,
+    color: "#4b5563",
+    marginBottom: 10,
   },
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 5,
-    marginTop: 5,
-    objectFit: "contain",
+    width: 90,
+    height: 90,
+    marginVertical: 10,
   },
   description: {
     fontSize: 16,
-    color: "#333",
-    textAlign: "justify",
-    justifyContent: "center",
-    marginBottom: 10,
-    lineHeight: 21,
+    color: "#374151",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 22,
   },
   footer: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#555",
+    fontSize: 12,
+    color: "#6b7280",
     textAlign: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
 });

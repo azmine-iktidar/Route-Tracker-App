@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import * as ExpoLocation from "expo-location";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, Polyline, Region } from "react-native-maps";
 import { LocationType, RoutePoint, RouteType, Checkpoint } from "../../types";
@@ -56,7 +57,33 @@ const MapViewContainer = forwardRef<MapViewHandle, MapViewContainerProps>(
     const [currentAccuracy, setCurrentAccuracy] = useState<number | null>(null);
     const [isCompassVisible, setIsCompassVisible] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [compassHeading, setCompassHeading] = useState(0);
 
+    useEffect(() => {
+      let isMounted = true;
+      let subscription: ExpoLocation.LocationSubscription;
+
+      (async () => {
+        let { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.error("Permission to access location was denied");
+          return;
+        }
+
+        subscription = await ExpoLocation.watchHeadingAsync((heading) => {
+          if (isMounted) {
+            setCompassHeading(heading.magHeading);
+          }
+        });
+      })();
+
+      return () => {
+        isMounted = false;
+        if (subscription) {
+          subscription.remove();
+        }
+      };
+    }, []);
     useImperativeHandle(ref, () => ({
       centerOnUserLocation: () => {
         if (mapRef.current && location) {
@@ -324,6 +351,14 @@ const styles = StyleSheet.create({
   rotationText: {
     color: "white",
     fontWeight: "bold",
+  },
+  overlayContainer: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    right: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 });
 
