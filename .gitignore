@@ -27,9 +27,10 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
+eas.json
 # local env files
 .env*.local
+*.env
 .env
 # typescript
 *.tsbuildinfo
