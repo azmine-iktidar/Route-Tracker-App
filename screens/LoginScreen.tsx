@@ -46,7 +46,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     >
       <View style={styles.innerContainer}>
         <Text style={styles.heading}>Welcome Back!</Text>
-        <Text style={styles.subHeading}>Sign in to Tac Nav App</Text>
+        <Text style={styles.subHeading}>Sign in</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
 

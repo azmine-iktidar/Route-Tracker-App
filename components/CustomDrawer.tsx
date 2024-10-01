@@ -20,7 +20,6 @@ export function CustomDrawer({ user, logout, ...props }: CustomDrawerProps) {
       >
         <View style={styles.header}>
           <Image source={require("../assets/logo.png")} style={styles.logo} />
-          {/* <Text style={styles.appName}>Tac Nav App</Text> */}
         </View>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>

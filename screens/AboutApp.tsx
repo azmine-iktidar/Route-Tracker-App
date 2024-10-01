@@ -97,18 +97,14 @@ const AboutApp = () => {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>About the App</Text>
         <Text style={styles.description}>
-          Tactical Navigator assists BD Army in executing missions with custom
-          routes, real-time tracking, and secure data sharing.
+          Tactical Navigator assists in executing missions with custom routes,
+          real-time tracking, and secure data sharing.
         </Text>
         <Text style={styles.description}>
           Navigate complex terrains, ensure mission readiness, and make informed
           decisions with pre-saved routes and up-to-date map data.
         </Text>
       </View>
-
-      <Text style={styles.developer}>
-        Developed by: BA-10846 Capt Md. Azmine Abrar, Engrs
-      </Text>
     </ScrollView>
   );
 };
